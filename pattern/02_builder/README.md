@@ -43,6 +43,7 @@
 
 # Использование:
 1. построение сложного объекта от его представления
+2. The patterns is well suited for constructing different representations of the same class.
 
 # +:
 1. позволяет изменить внутреннее представление продукта

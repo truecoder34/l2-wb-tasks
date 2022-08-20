@@ -12,6 +12,7 @@ import "fmt"
 Examples
 [1] https://devcharmander.medium.com/design-patterns-in-golang-the-builder-dac468a71194
 [2] https://github.com/AlexanderGrom/go-patterns/blob/master/Creational/Builder/builder.go
+[3] https://blog.ralch.com/articles/design-patterns/golang-builder/
 */
 
 /*
@@ -67,7 +68,7 @@ type Builder interface {
 	ChooseOS(os string)
 	ChooseGoal(goal string) // storage, computing
 
-	GetServerStructure() Server
+	GetServerStructure() *Server // возвращает полную структуру сервера
 }
 
 /*
@@ -79,17 +80,25 @@ type Director struct {
 }
 
 // Construct tells the builder what to do and in what order. Их может быть НЕСКОЛЬКО
-func (d *Director) ConfigureCPUServer(cpu string, cores int, sockets int, ram int, os string) {
-	d.builder.ChooseCPU(cpu)
-	d.builder.ChooseCores(cores)
-	d.builder.ChooseSockets(sockets)
-	d.builder.ChooseRAM(ram)
-	d.builder.ChooseOS(os)
+func (d *Director) ConfigureCPUServer(builder Builder, cpu string, cores, sk, ram int, os string) *Server {
+	builder.ChooseCPU(cpu)
+	builder.ChooseCores(cores)
+	builder.ChooseSockets(sk)
+	builder.ChooseRAM(ram)
+	builder.ChooseOS(os)
+
+	return builder.GetServerStructure()
 }
 
 // Второй метод. Конфигурируем с ГПУ
-func (d *Director) ConfigureGPUServer() {
+func (d *Director) ConfigureGPUServer(builder Builder, cpu, gpu string, gpunumber, cores int, os string) *Server {
+	builder.ChooseCPU(cpu)
+	builder.ChooseCores(cores)
+	builder.ChooseGPU(gpu)
+	builder.ChooseGPUNumber(gpunumber)
+	builder.ChooseOS(os)
 
+	return builder.GetServerStructure()
 }
 
 // ==================================================================================
@@ -105,20 +114,26 @@ func (lb *LenovoBuilder) ChooseCPU(model string) {
 	lb.configuration.CPU = model
 	fmt.Printf("Lenovo has chosen CPU model : %s\n", lb.configuration.CPU)
 }
+func (lb *LenovoBuilder) ChooseCores(coreCount int) {
+	lb.configuration.Cores = coreCount
+	fmt.Printf("Lenovo has chosen CPU with %d cores\n", lb.configuration.Cores)
+}
 
 // имплементировать КАЖДЫЙ МЕТОД
 func (lb *LenovoBuilder) ChooseSockets(socketsNum int) {}
-func (lb *LenovoBuilder) ChooseCores(coreCount int)    {}
 func (lb *LenovoBuilder) ChooseRAM(gbs int)            {}
-func (lb *LenovoBuilder) ChooseGPU(cpuModel string)    {}
-func (lb *LenovoBuilder) ChooseGPUNumber(num int)      {}
-func (lb *LenovoBuilder) ChooseHDDMemory(gbs int)      {}
-func (lb *LenovoBuilder) ChooseOS(os string)           {}
-func (lb *LenovoBuilder) ChooseGoal(goal string)       {}
+func (lb *LenovoBuilder) ChooseGPU(gpuModel string) {
+	lb.configuration.GPU = gpuModel
+	fmt.Printf("Lenovo has chosen GPU model : %s\n", lb.configuration.GPU)
+}
+func (lb *LenovoBuilder) ChooseGPUNumber(num int) {}
+func (lb *LenovoBuilder) ChooseHDDMemory(gbs int) {}
+func (lb *LenovoBuilder) ChooseOS(os string)      {}
+func (lb *LenovoBuilder) ChooseGoal(goal string)  {}
 
-func (lb *LenovoBuilder) GetServerStructure() Server {
+func (lb *LenovoBuilder) GetServerStructure() *Server {
 	fmt.Printf("Lenovo proposed configuration  : %v \n", lb.configuration)
-	return lb.configuration
+	return &lb.configuration
 }
 
 // ==================================================================================
@@ -133,10 +148,13 @@ func (hp *HPBuilder) ChooseCPU(model string) {
 	hp.configuration.CPU = model
 	fmt.Printf("HP has chosen CPU model : %s\n", hp.configuration.CPU)
 }
+func (hp *HPBuilder) ChooseCores(coreCount int) {
+	hp.configuration.Cores = coreCount
+	fmt.Printf("Lenovo has chosen CPU with %d cores\n", hp.configuration.Cores)
+}
 
 // имплементировать КАЖДЫЙ МЕТОД
 func (hp *HPBuilder) ChooseSockets(socketsNum int) {}
-func (hp *HPBuilder) ChooseCores(coreCount int)    {}
 func (hp *HPBuilder) ChooseRAM(gbs int)            {}
 func (hp *HPBuilder) ChooseGPU(cpuModel string)    {}
 func (hp *HPBuilder) ChooseGPUNumber(num int)      {}
@@ -144,40 +162,51 @@ func (hp *HPBuilder) ChooseHDDMemory(gbs int)      {}
 func (hp *HPBuilder) ChooseOS(os string)           {}
 func (hp *HPBuilder) ChooseGoal(goal string)       {}
 
-func (hp *HPBuilder) GetServerStructure() Server {
+func (hp *HPBuilder) GetServerStructure() *Server {
 	fmt.Printf("HP proposed configuration  : %v \n", hp.configuration)
-	return hp.configuration
+	return &hp.configuration
 }
 
-func NewHP() Builder {
-	return &HPBuilder{}
-}
+// ==================================================================================
+
+// 3. Реализация двух  билдеров  : GPU Server, CPU Server
+// ==================================================================================
 
 func main() {
 
-	LenovoBuilder := &LenovoBuilder{}
-	LenovoBuilder.ChooseCPU("Intel CLX8260L")
-	LenovoBuilder.ChooseCores(48)
-	LenovoBuilder.ChooseSockets(2)
-	LenovoBuilder.ChooseRAM(192)
-	resultLenovo := LenovoBuilder.GetServerStructure()
+	lenovoBuilder := &LenovoBuilder{}
+	lenovoBuilder.ChooseCPU("Intel CLX8260L")
+	lenovoBuilder.ChooseCores(48)
+	lenovoBuilder.ChooseSockets(2)
+	lenovoBuilder.ChooseRAM(192)
+
+	resultLenovo := lenovoBuilder.GetServerStructure()
 	fmt.Printf("%v\n", resultLenovo)
 
-	HPBuilder := &HPBuilder{}
-	HPBuilder.ChooseCPU("AMD EPYC 7763")
-	HPBuilder.ChooseCores(64)
-	HPBuilder.ChooseSockets(2)
-	HPBuilder.ChooseRAM(192)
-	resultHP := HPBuilder.GetServerStructure()
+	hpBuilder := &HPBuilder{}
+	hpBuilder.ChooseCPU("AMD EPYC 7763")
+	hpBuilder.ChooseCores(64)
+	hpBuilder.ChooseSockets(2)
+	hpBuilder.ChooseRAM(192)
+	resultHP := hpBuilder.GetServerStructure()
 	fmt.Printf("%v\n", resultHP)
 
+	fmt.Println("==========USE DIRECTOR===================")
 	// через Директора !
 	// Директор нужен каждому билдеру?
-	// dir := &Director{}
-	// dir.ConfigureCPUServer("IBM Power S814", 6, 2, 16, "IBM Solaris")
+	dir := &Director{}
+	res := dir.ConfigureCPUServer(&HPBuilder{}, "IBM Power S814", 6, 2, 16, "IBM Solaris")
+	fmt.Println(res)
+
+	res2 := dir.ConfigureGPUServer(&LenovoBuilder{}, "Intel Xeon v3", "Nvidia V100", 2, 12, "RedHat 9.2")
+	fmt.Println(res2)
 
 	// через лонг билдер
-	//HPBuilder2 = &LenovoBuilder{}
+	// HomoServer := NewServerBuilder{}
+	// HomoServer.HomogenousConstructor().ChooseCPU("").ChooseCores(1)
+	// s := HomoServer.Build()
+	// fmt.Println(s)
+
 	//HPBuilder2.ChooseCPU("AMD EPYC 7763").ChooseCores(64).ChooseSockets(2)
 	//HPBuilder2 := NewHP()
 	//HPBuilder2.ChooseCPU("AMD EPYC 7763").ChooseCores(64).ChooseSockets(2)
