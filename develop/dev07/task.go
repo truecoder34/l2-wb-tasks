@@ -1,5 +1,11 @@
 package main
 
+import (
+	"fmt"
+	"sync"
+	"time"
+)
+
 /*
 === Or channel ===
 
@@ -33,6 +39,58 @@ start := time.Now()
 fmt.Printf(“fone after %v”, time.Since(start))
 */
 
-func main() {
+func or(chans ...<-chan interface{}) <-chan interface{} {
+	var wg sync.WaitGroup
+	result := make(chan interface{})
 
+	// метод для закрытия канала
+	closeChan := func(ch <-chan interface{}) {
+		// читаем покка можем читать
+		for val := range ch {
+			result <- val
+		}
+
+		wg.Done()
+	}
+
+	wg.Add(len(chans))         // добавляем в вг счетчик число переданных каналов
+	for _, ch := range chans { // в каждую гшорутину запускаепм функцию
+		go closeChan(ch) // поочередно закпрываем канал
+	}
+
+	go func() {
+		wg.Wait()
+		close(result)
+	}()
+	return result
+}
+
+func main() {
+	sig := func(after time.Duration) <-chan interface{} {
+		c := make(chan interface{})
+		go func() {
+			defer close(c)
+			time.Sleep(after)
+		}()
+		return c
+	}
+
+	start := time.Now()
+	<-or(
+		//sig(2*time.Hour),
+		//sig(5*time.Minute),
+		sig(2*time.Second),
+		sig(4*time.Second),
+		sig(8*time.Second),
+		//sig(1*time.Hour),
+		//sig(1*time.Minute),
+	)
+
+	fmt.Printf("done after %v\n", time.Since(start))
+
+	/*
+			OUTPUT
+		> go run .\task.go
+		done after 8.0002018s
+	*/
 }
