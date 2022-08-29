@@ -78,12 +78,12 @@ func main() {
 
 }
 
-//array of lines
-type Line struct {
-	idx   int
-	line  string
-	print bool
-}
+// //array of lines
+// type Line struct {
+// 	idx   int
+// 	line  string
+// 	print bool
+// }
 
 //ReadFile  IN::file path, OUT::text structure  [0] -
 func ReadFile(filePath string) []string {
@@ -156,9 +156,10 @@ func Sort(text []string, sortByColumn int, sortByNumbers, sortReverse, noDuplica
 		if checkSort {                    // Проверяет, отсортировано ли содержимое файла
 			if !sort.IntsAreSorted(nums) {
 				return []string{"Need to sort"}
-			} else {
-				return []string{"No need to sort"}
 			}
+
+			return []string{"No need to sort"}
+
 		}
 		for k := range text { // Перебираем индексы строк
 			n, err := strconv.Atoi(text[k])
@@ -188,7 +189,7 @@ func Sort(text []string, sortByColumn int, sortByNumbers, sortReverse, noDuplica
 	return text
 }
 
-//ColumnSort - sort text be exact column. If in line less columns, it will be sorted by last value in it and moved DOWN
+//ColumnBySort - sort text be exact column. If in line less columns, it will be sorted by last value in it and moved DOWN
 func ColumnBySort(text []string, columnNum int) []string {
 	if columnNum == -1 { // Номер столбца по которому сортируем. По умолчанию - вся строка (до перевода строки)
 		sort.Strings(text)
@@ -207,7 +208,7 @@ func ColumnBySort(text []string, columnNum int) []string {
 	return text
 }
 
-//SortReverse
+//SortReverse method
 func SortReverse(text []string) []string {
 	for i, j := 0, len(text)-1; i < j; i, j = i+1, j-1 {
 		text[i], text[j] = text[j], text[i]
@@ -215,7 +216,7 @@ func SortReverse(text []string) []string {
 	return text
 }
 
-//Output
+//Output method
 func Output(text []string) {
 	for _, v := range text {
 		fmt.Println(v)
